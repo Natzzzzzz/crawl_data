@@ -1,0 +1,19 @@
+name: crawl_app
+description: Giao diện tải truyện, gọi backend Python cục bộ.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+# Cố ý KHÔNG dùng package bên thứ ba: chỉ Flutter SDK + dart:io.
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

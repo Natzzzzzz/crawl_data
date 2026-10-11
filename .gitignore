@@ -1,0 +1,15 @@
+# Python env (tạo lại bằng venv + pip, không commit)
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Flutter build (gitignored trong flutter_app/, nhắc lại ở root cho chắc)
+flutter_app/build/
+
+# Local / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
