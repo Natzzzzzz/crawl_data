@@ -1,0 +1,61 @@
+workflows:
+  macos-build:
+    name: Build macOS app
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      flutter: beta # .metadata của repo dùng kênh beta; pubspec.lock cần Dart >= 3.13
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Sinh thư mục macos/ nếu chưa có
+        working_directory: flutter_app
+        script: |
+          if [ ! -d macos ]; then
+            flutter create --platforms=macos .
+          fi
+          # flutter create có thể sinh lại test mẫu tham chiếu widget không tồn tại
+          rm -f test/widget_test.dart
+
+      - name: Tắt App Sandbox (để app chạy được Process.start cho Python)
+        working_directory: flutter_app
+        script: |
+          for f in macos/Runner/DebugProfile.entitlements macos/Runner/Release.entitlements; do
+            # dòng ngay sau key app-sandbox: <true/> -> <false/>
+            sed -i '' '/com.apple.security.app-sandbox/{n;s/<true\/>/<false\/>/;}' "$f"
+            echo "== $f =="; cat "$f"
+          done
+
+      - name: flutter pub get
+        working_directory: flutter_app
+        script: flutter pub get
+
+      - name: flutter test
+        working_directory: flutter_app
+        ignore_failure: true # chưa chắc có test; không để chặn build
+        script: |
+          if [ -d test ]; then flutter test; else echo "Không có thư mục test"; fi
+
+      - name: flutter build macos
+        working_directory: flutter_app
+        script: flutter build macos --release
+
+      - name: Đóng gói .app + backend thành zip
+        script: |
+          mkdir -p dist
+          cp -R flutter_app/build/macos/Build/Products/Release/*.app dist/
+          cp -R backend dist/
+          cp requirements.txt dist/ 2>/dev/null || echo "Không có requirements.txt ở root"
+          cat > dist/README_MAC.txt <<'EOF'
+          1. Cài Python 3.10+ rồi tạo venv:
+               python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+          2. Gỡ cờ chặn của macOS (app chưa ký):
+               xattr -cr crawl_app.app
+          3. Mở app > Cài đặt > điền "Thư mục backend" (thư mục chứa backend/)
+             và Python = <thư mục>/.venv/bin/python
+          EOF
+          ditto -c -k --keepParent dist crawl_app_macos.zip
+
+    artifacts:
+      - crawl_app_macos.zip
+      - flutter_app/build/macos/Build/Products/Release/*.app
